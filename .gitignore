@@ -1,0 +1,9 @@
+/terraform/.terraform/
+/terraform/terraform.tfstate
+/terraform/terraform.tfstate.backup
+/terraform/crash.log
+/terraform/*.tfvars
+/terraform/.oci/config
+/terraform/.oci/*.pem
+/terraform/.oci/*.pub
+/terraform/.terraform.lock.hcl

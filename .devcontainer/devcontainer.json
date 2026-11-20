@@ -1,0 +1,24 @@
+{
+  "name": "monitoring-server",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+  "features": {
+    "ghcr.io/devcontainers/features/terraform:1": {},
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.12"
+    }
+  },
+  "remoteUser": "root",
+  "workspaceFolder": "/workspaces/monitoring-server",
+  "mounts": [
+    "source=${localWorkspaceFolder}/terraform/.oci,target=/root/.oci,type=bind,consistency=cached"
+  ],
+  "remoteEnv": {
+    "PATH": "${containerEnv:PATH}:/root/.local/share/oci-cli/bin"
+  },
+  "postCreateCommand": "python3 -m venv /root/.local/share/oci-cli && /root/.local/share/oci-cli/bin/pip install --disable-pip-version-check --no-cache-dir oci-cli",
+  "customizations": {
+    "vscode": {
+      "extensions": ["HashiCorp.terraform"]
+    }
+  }
+}
