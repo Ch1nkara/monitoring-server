@@ -1,0 +1,52 @@
+#cloud-config
+package_update: true
+package_upgrade: true
+packages:
+  - ca-certificates
+  - curl
+  - jq
+
+write_files:
+  - path: /usr/local/bin/bootstrap-k3s-argocd.sh
+    owner: root:root
+    permissions: "0755"
+    content: |
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+      K3S_BIN=/usr/local/bin/k3s
+
+      wait_for_cluster() {
+        for _ in $(seq 1 180); do
+          if "$K3S_BIN" kubectl get nodes >/dev/null 2>&1; then
+            return 0
+          fi
+          sleep 5
+        done
+
+        echo "k3s never became ready" >&2
+        return 1
+      }
+
+      install_k3s() {
+        if [ -x "$K3S_BIN" ]; then
+          return 0
+        fi
+
+        curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="stable" INSTALL_K3S_EXEC="server --write-kubeconfig-mode 644" sh -
+      }
+
+      install_argocd() {
+        "$K3S_BIN" kubectl create namespace argocd --dry-run=client -o yaml | "$K3S_BIN" kubectl apply -f -
+        "$K3S_BIN" kubectl apply -n argocd -f "https://raw.githubusercontent.com/argoproj/argo-cd/v2.12.7/manifests/install.yaml"
+        "$K3S_BIN" kubectl -n argocd rollout status deploy/argocd-server --timeout=600s
+        "$K3S_BIN" kubectl -n argocd patch svc argocd-server --type merge -p '{"spec":{"type":"NodePort","ports":[{"name":"https","port":443,"protocol":"TCP","targetPort":8080,"nodePort":30443}]}}'
+      }
+
+      install_k3s
+      wait_for_cluster
+      install_argocd
+
+runcmd:
+  - [bash, /usr/local/bin/bootstrap-k3s-argocd.sh]
